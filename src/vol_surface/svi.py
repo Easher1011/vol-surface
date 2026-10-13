@@ -1,29 +1,39 @@
 import numpy as np
 from scipy.optimize import least_squares
 
+OUTLIER_MULT = 5  # drop quotes missing the curve by >5x the typical (median) miss
+
 
 def svi_total_variance(k, a, b, rho, m, sigma):
     """Raw SVI: total implied variance (vol^2 * T) as a function of log-moneyness k."""
     return a + b * (rho * (k - m) + np.sqrt((k - m) ** 2 + sigma ** 2))
 
 
-def fit_svi(k, w):
-    """Find the five SVI parameters that best fit market total variance w at log-moneyness k."""
+def _fit_once(k, w, x0, lower, upper):
+    """One plain least-squares fit of the five SVI parameters."""
 
     def residuals(params):
-        a, b, rho, m, sigma = params
-        return svi_total_variance(k, a, b, rho, m, sigma) - w
+        return svi_total_variance(k, *params) - w
 
-    x0 = [max(0.9 * w.min(), 1e-6), 0.1, -0.5, 0.0, 0.1]  # starting guess
-    lower = [-w.max(), 0.0, -0.999, -1.0, 1e-4]           # a may be negative...
-    upper = [w.max(), 5.0, 0.999, 1.0, 2.0]
-    result = least_squares(residuals, x0, bounds=(lower, upper))
+    result = least_squares(residuals, np.clip(x0, lower, upper), bounds=(lower, upper))
     a, b, rho, m, sigma = result.x
-    min_variance = a + b * sigma * np.sqrt(1 - rho ** 2)  # lowest point of the curve
-    if min_variance < 0:
+    if a + b * sigma * np.sqrt(1 - rho ** 2) < 0:  # lowest point of the curve must be positive
         print("Warning: fitted variance goes negative, fit is invalid")
     return result.x
 
+
+def fit_svi(k, w):
+    """Fit, drop quotes far worse than typical, refit starting from the first answer."""
+    lower = [-w.max(), 0.0, -0.999, -1.0, 1e-4]   # a may be negative...
+    upper = [w.max(), 5.0, 0.999, 1.0, 2.0]
+    x0 = [max(0.9 * w.min(), 1e-6), 0.1, -0.5, 0.0, 0.1]
+
+    params = _fit_once(k, w, x0, lower, upper)
+    miss = np.abs(svi_total_variance(k, *params) - w)
+    keep = miss < OUTLIER_MULT * np.median(miss)
+    if 8 <= keep.sum() < len(w):  # refit only if something was dropped and enough remains
+        params = _fit_once(k[keep], w[keep], params, lower, upper)
+    return params
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt

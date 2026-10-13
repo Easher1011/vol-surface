@@ -47,13 +47,21 @@ for i, expiry in enumerate(params["expiry"]):
     lo, hi = data_range.loc[expiry]
     IV_fit[i, (k_grid < lo) | (k_grid > hi)] = np.nan
 
-# --- calendar arbitrage check: total variance must rise with expiry ---
-drops = np.diff(W_fit, axis=0) < 0
-bad_pairs = [(params["expiry"][i], params["expiry"][i + 1])
-             for i in range(len(drops)) if drops[i].any()]
-print(f"\nCalendar arbitrage: {len(bad_pairs)} of {len(drops)} expiry pairs have violations")
-for pair in bad_pairs:
-    print("  ", pair[0], "->", pair[1])
+# --- calendar arbitrage check, only where both neighbouring expiries have market data ---
+data_range = df.groupby("expiry")["k"].agg(["min", "max"])
+print("\nCalendar arbitrage check (total variance must rise with expiry):")
+n_bad = 0
+for i in range(len(params) - 1):
+    e1, e2 = params["expiry"][i], params["expiry"][i + 1]
+    lo = max(data_range.loc[e1, "min"], data_range.loc[e2, "min"])
+    hi = min(data_range.loc[e1, "max"], data_range.loc[e2, "max"])
+    inside = (k_grid >= lo) & (k_grid <= hi)       # strikes both expiries have data for
+    drop = W_fit[i] - W_fit[i + 1]                 # positive = variance falls = arbitrage
+    if inside.any() and drop[inside].max() > 0:
+        n_bad += 1
+        pct = 100 * drop[inside].max() / W_fit[i][inside].mean()
+        print(f"  {e1} -> {e2}: variance falls by up to {pct:.1f}%")
+print(f"{n_bad} of {len(params) - 1} expiry pairs violate where there's real data")
 
 # --- raw surface on the same grid, for comparison ---
 plot_df = df[df["k"].abs() <= PLOT_RANGE]
