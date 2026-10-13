@@ -86,3 +86,9 @@ Path("output").mkdir(exist_ok=True)
 params.to_csv("output/svi_params.csv", index=False)
 fig.write_html("output/svi_surface.html")
 fig.show()
+
+# save results for the website
+Path("results").mkdir(exist_ok=True)
+fig.write_json("results/svi_surface.json")
+params.join(data_range.rename(columns={"min": "k_min", "max": "k_max"}), on="expiry") \
+      .to_csv("results/svi_params.csv", index=False)

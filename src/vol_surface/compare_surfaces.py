@@ -77,3 +77,10 @@ fig.update_layout(
 Path("output").mkdir(exist_ok=True)
 fig.write_html("output/model_surfaces.html")
 fig.show()
+
+# save results for the website
+import json
+Path("results").mkdir(exist_ok=True)
+fig.write_json("results/model_surfaces.json")
+with open("results/heston_params.json", "w") as f:
+    json.dump(hp, f, indent=2)

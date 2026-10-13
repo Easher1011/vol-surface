@@ -116,3 +116,7 @@ if __name__ == "__main__":
     Path("output").mkdir(exist_ok=True)
     fig.write_html("output/local_vol.html")
     fig.show()
+
+    # save results for the website
+    Path("results").mkdir(exist_ok=True)
+    fig.write_json("results/local_vol.json")

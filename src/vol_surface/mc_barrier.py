@@ -110,3 +110,15 @@ option.setPricingEngine(ql.AnalyticHestonEngine(ql.HestonModel(proc)))
 
 print(f"\nMarket vanilla put (Black-Scholes at market vol): {bs:.3f}")
 print(f"Heston vanilla put (exact formula):              {option.NPV():.3f}")
+
+# save results for the website
+import json
+from pathlib import Path
+Path("results").mkdir(exist_ok=True)
+results.to_csv("results/barrier_prices.csv")
+meta = dict(as_of=str(lv["as_of"].date()), expiry=expiry, days=n_days,
+            spot=float(lv["spot"]), forward=float(F_T), strike=float(K),
+            barrier=float(B), market_vol=float(iv_K), bs_vanilla=float(bs),
+            heston_exact=float(option.NPV()), n_paths=N_PATHS)
+with open("results/barrier_meta.json", "w") as f:
+    json.dump(meta, f, indent=2)
