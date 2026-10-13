@@ -12,6 +12,7 @@ dependencies = [
     "numpy>=2.5.4",
     "pandas>=3.0.6",
     "plotly>=7.1.0",
+    "quantlib>=1.44",
     "scipy>=1.18.1",
     "streamlit>=1.65.0",
     "yfinance>=1.7.0",
