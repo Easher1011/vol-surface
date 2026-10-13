@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 import yfinance as yf
 
-def fetch_chain(ticker: str = "^SPX", n_expiries: int = 6) -> pd.DataFrame:
+def fetch_chain(ticker: str = "^SPX", n_expiries: int = 40) -> pd.DataFrame:
     tk = yf.Ticker(ticker)
     spot = tk.history(period="1d")["Close"].iloc[-1]
     frames = []
