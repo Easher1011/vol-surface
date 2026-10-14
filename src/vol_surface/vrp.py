@@ -83,3 +83,20 @@ Path("results").mkdir(exist_ok=True)
 fig.write_html("output/vrp.html")
 fig.write_json("results/vrp.json")
 fig.show()
+
+# save summary numbers and tables for the website
+import json
+summary = dict(
+    start=f"{df.index[0]:%b %Y}", end=f"{df.index[-1]:%b %Y}",
+    avg_vix=float(df["vix"].mean()), avg_rv=float(df["rv"].mean()),
+    avg_gap=float(df["vrp"].mean()), median_gap=float(df["vrp"].median()),
+    pct_days_positive=float((df["vrp"] > 0).mean()),
+    months=len(monthly), pct_months_profitable=float((monthly["short_var_pnl"] > 0).mean()),
+    avg_month=float(monthly["short_var_pnl"].mean()),
+    median_month=float(monthly["short_var_pnl"].median()),
+    worst_drawdown=float(drawdown.min()),
+)
+with open("results/vrp_summary.json", "w") as f:
+    json.dump(summary, f, indent=2)
+worst.to_csv("results/vrp_worst_months.csv")
+yearly.to_csv("results/vrp_yearly.csv")

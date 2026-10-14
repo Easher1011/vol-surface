@@ -49,7 +49,8 @@ st.markdown(
 )
 
 tabs = st.tabs(["Surface", "Smile explorer", "Local vol", "Model comparison",
-                "Barrier pricing", "Method & limitations"])
+                "Barrier pricing", "VIX rebuild", "Variance risk premium",
+                "Method & limitations"])
 
 # ---------------- 1. surface ----------------
 with tabs[0]:
@@ -147,8 +148,60 @@ with tabs[4]:
         "which both models are calibrated to."
     )
 
-# ---------------- 6. method ----------------
+# ---------------- VIX rebuild ----------------
 with tabs[5]:
+    vix = json.loads((RESULTS / "vix.json").read_text())
+    st.subheader("Rebuilding the VIX index from SPX options")
+    a, b, c = st.columns(3)
+    a.metric("My VIX", f"{vix['my_vix']:.2f}")
+    b.metric("Official VIX", f"{vix['official']:.2f}")
+    c.metric("Difference", f"{vix['my_vix'] - vix['official']:+.2f}")
+    st.markdown(
+        "VIX is Cboe's measure of expected S&P 500 volatility over the next 30 days, calculated "
+        "from SPX option prices. This rebuilds it from the same raw quotes used for the surface, "
+        "following Cboe's published method: take the two expiries either side of 30 days, sum "
+        "the prices of out-of-the-money options weighted by 1/strike², and interpolate to "
+        "exactly 30 days."
+    )
+    st.markdown(
+        f"**Expiries used:** {vix['near']} ({vix['near_days']:.1f} days, {vix['near_vol']:.2f}%) "
+        f"and {vix['next']} ({vix['next_days']:.1f} days, {vix['next_vol']:.2f}%). "
+        f"**Snapshot:** {vix['snapshot']} New York time; the official reading available was "
+        f"from {vix['official_time']}, so part of any difference reflects market moves in between."
+    )
+
+# ---------------- variance risk premium ----------------
+with tabs[6]:
+    s = json.loads((RESULTS / "vrp_summary.json").read_text())
+    st.subheader(f"The variance risk premium, {s['start']} to {s['end']}")
+    a, b, c, d = st.columns(4)
+    a.metric("Average VIX", f"{s['avg_vix']:.1f}")
+    b.metric("Average realised vol (next 30 days)", f"{s['avg_rv']:.1f}")
+    c.metric("VIX above what followed", f"{s['pct_days_positive']:.0%} of days")
+    d.metric("Worst drawdown, short variance", f"{s['worst_drawdown']:.0f} vol pts")
+    st.plotly_chart(load_fig("vrp.json", height=950), width="stretch")
+    st.markdown(
+        f"VIX is what options charge for the next 30 days of volatility; realised vol is what "
+        f"actually followed. On average VIX exceeded it by {s['avg_gap']:.1f} vol points. "
+        f"Selling 30-day variance monthly (non-overlapping) was profitable in "
+        f"{s['pct_months_profitable']:.0%} of {s['months']} months, with a median month of "
+        f"{s['median_month']:+.1f} but an average of only {s['avg_month']:+.1f}: frequent small "
+        f"gains, rare large losses. The worst losses began from low VIX levels, when the premium "
+        f"collected was smallest. This measures the premium; it is not a tradable backtest "
+        f"(no costs, VIX is not directly tradable)."
+    )
+    col1, col2 = st.columns(2)
+    col1.markdown("**Worst months for a volatility seller**")
+    col1.dataframe(pd.read_csv(RESULTS / "vrp_worst_months.csv")
+                   .rename(columns={"vix": "VIX", "rv": "Realised", "short_var_pnl": "P&L"})
+                   .round(1), hide_index=True)
+    col2.markdown("**Average by year**")
+    col2.dataframe(pd.read_csv(RESULTS / "vrp_yearly.csv")
+                   .rename(columns={"Date": "Year", "vix": "VIX", "rv": "Realised", "vrp": "Gap"})
+                   .round(1), hide_index=True, height=400)
+    
+# ---------------- 6. method ----------------
+with tabs[7]:
     st.subheader("Method")
     st.markdown("""
 1. **Data:** SPX option chain from Yahoo Finance (end-of-day snapshot).

@@ -94,3 +94,15 @@ if __name__ == "__main__":
     print(f"\nMy VIX:       {my_vix:.2f}")
     print(f"Official VIX: {official:.2f}  (at {hist.index[i]:%H:%M} New York time)")
     print(f"Difference:   {my_vix - official:+.2f}")
+
+        # save the result for the website
+    import json
+    from pathlib import Path
+    Path("results").mkdir(exist_ok=True)
+    with open("results/vix.json", "w") as f:
+        json.dump(dict(
+            snapshot=f"{now:%Y-%m-%d %H:%M}", official_time=f"{hist.index[i]:%H:%M}",
+            my_vix=round(float(my_vix), 2), official=round(float(official), 2),
+            near=near, near_days=round(mins[near] / 1440, 2), near_vol=round(100 * float(np.sqrt(v1)), 2),
+            next=nxt, next_days=round(mins[nxt] / 1440, 2), next_vol=round(100 * float(np.sqrt(v2)), 2),
+        ), f, indent=2)

@@ -1,0 +1,14 @@
+{
+  "start": "Jan 1990",
+  "end": "Sep 2026",
+  "avg_vix": 19.436354000331338,
+  "avg_rv": 15.3329150731685,
+  "avg_gap": 4.103438927162837,
+  "median_gap": 4.713654413681578,
+  "pct_days_positive": 0.8588120740019474,
+  "months": 441,
+  "pct_months_profitable": 0.8435374149659864,
+  "avg_month": 2.7292645881331103,
+  "median_month": 3.912535011568946,
+  "worst_drawdown": -119.72867137507353
+}
