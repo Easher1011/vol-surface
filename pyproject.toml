@@ -15,6 +15,7 @@ dependencies = [
     "quantlib>=1.44",
     "scipy>=1.18.1",
     "streamlit>=1.65.0",
+    "tzdata>=2026.5",
     "yfinance>=1.7.0",
 ]
 

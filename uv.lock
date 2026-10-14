@@ -2161,6 +2161,7 @@ dependencies = [
     { name = "quantlib" },
     { name = "scipy" },
     { name = "streamlit" },
+    { name = "tzdata" },
     { name = "yfinance" },
 ]
 
@@ -2179,6 +2180,7 @@ requires-dist = [
     { name = "quantlib", specifier = ">=1.44" },
     { name = "scipy", specifier = ">=1.18.1" },
     { name = "streamlit", specifier = ">=1.65.0" },
+    { name = "tzdata", specifier = ">=2026.5" },
     { name = "yfinance", specifier = ">=1.7.0" },
 ]
 
