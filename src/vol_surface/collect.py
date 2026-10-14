@@ -2,6 +2,7 @@
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
+import yfinance as yf
 from vol_surface.data import fetch_chain
 
 TICKERS = {"spx": "^SPX", "ndx": "^NDX", "rut": "^RUT"}
@@ -38,4 +39,13 @@ if __name__ == "__main__":
                 log(f"{name}: {len(df)} quotes saved")
             except Exception as e:  # one index failing shouldn't stop the others
                 log(f"{name}: FAILED ({e})")
+
+        # record the official VIX at the same moment, for a fair comparison later
+        try:
+            vix_now = yf.Ticker("^VIX").fast_info.last_price
+            with open(OUT / "vix_official.csv", "a") as f:
+                f.write(f"{today},{datetime.now().isoformat(timespec='seconds')},{vix_now:.2f}\n")
+            log(f"vix: {vix_now:.2f} recorded")
+        except Exception as e:
+            log(f"vix: FAILED ({e})")
             
