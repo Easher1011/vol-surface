@@ -37,9 +37,9 @@ st.caption(f"S&P 500 index options · data as of {meta['as_of']} · built by Eme
 c1, c2, c3 = st.columns(3)
 c1.metric("Down-and-in put: flat vol", f"{di['Flat vol']:.1f}")
 c2.metric("Down-and-in put: local vol", f"{di['Local vol']:.1f}",
-          f"{di['Local vol'] / di['Flat vol'] - 1:+.0%} vs flat vol")
+          f"{di['Local vol'] / di['Flat vol'] - 1:+.0%} vs flat vol", delta_color="off")
 c3.metric("Down-and-in put: Heston", f"{di['Heston']:.1f}",
-          f"{di['Heston'] / di['Flat vol'] - 1:+.0%} vs flat vol")
+          f"{di['Heston'] / di['Flat vol'] - 1:+.0%} vs flat vol", delta_color="off")
 
 st.markdown(
     "This project builds an implied volatility surface for the S&P 500 from raw option quotes, "
