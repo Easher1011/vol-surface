@@ -9,8 +9,8 @@ MAX_SPREAD = 0.10   # drop quotes where bid-ask spread is over 10% of mid
 PARITY_BAND = 0.05  # use strikes within 5% of spot to estimate the forward
 
 
-def load_latest():
-    path = sorted(Path("data/raw").glob("spx_*.csv"))[-1]
+def load_latest(prefix="spx"):
+    path = sorted(Path("data/raw").glob(f"{prefix}_*.csv"))[-1]
     as_of = pd.Timestamp(path.stem.split("_")[1])
     return pd.read_csv(path), as_of
 
@@ -28,21 +28,30 @@ def prepare(df, as_of):
     return df[liquid]
 
 
-def implied_forwards(df):
-    """Put-call parity: C - P = DF * (F - K). Regress C - P on K for each expiry."""
+def implied_forwards(df, rate=None):
+    """Forward and discount factor per expiry from put-call parity: C - P = DF * (F - K).
+    rate=None: regress C - P on K to get both (used for the SPX surface).
+    rate given: fix DF = exp(-rate * T) and take F as the median of K + (C - P) / DF,
+    which is more robust where quotes are thin (Nasdaq, Russell)."""
     rows = []
     for expiry, g in df.groupby("expiry"):
         calls = g[g["type"] == "call"].set_index("strike")["mid"]
         puts = g[g["type"] == "put"].set_index("strike")["mid"]
         spot = g["spot"].iloc[0]
+        T = g["T"].iloc[0]
         strikes = [k for k in calls.index.intersection(puts.index)
                    if abs(k / spot - 1) < PARITY_BAND]
         if len(strikes) < 5:  # not enough matched strikes to trust the fit
             continue
-        slope, intercept = np.polyfit(strikes, calls[strikes] - puts[strikes], 1)
-        DF = -slope
-        rows.append({"expiry": expiry, "F": intercept / DF, "DF": DF,
-                     "T": g["T"].iloc[0], "spot": spot})
+        cp = (calls[strikes] - puts[strikes]).values
+        if rate is None:
+            slope, intercept = np.polyfit(strikes, cp, 1)
+            DF = -slope
+            F = intercept / DF
+        else:
+            DF = np.exp(-rate * T)
+            F = float(np.median(np.array(strikes) + cp / DF))
+        rows.append({"expiry": expiry, "F": F, "DF": DF, "T": T, "spot": spot})
     fwd = pd.DataFrame(rows)
     fwd["implied_rate"] = -np.log(fwd["DF"]) / fwd["T"]
     fwd["F_over_spot"] = fwd["F"] / fwd["spot"]

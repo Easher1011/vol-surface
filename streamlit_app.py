@@ -50,7 +50,7 @@ st.markdown(
 
 tabs = st.tabs(["Surface", "Smile explorer", "Local vol", "Model comparison",
                 "Barrier pricing", "VIX rebuild", "Variance risk premium",
-                "Method & limitations"])
+                "Index comparison", "Method & limitations"])
 
 # ---------------- 1. surface ----------------
 with tabs[0]:
@@ -199,9 +199,34 @@ with tabs[6]:
     col2.dataframe(pd.read_csv(RESULTS / "vrp_yearly.csv")
                    .rename(columns={"Date": "Year", "vix": "VIX", "rv": "Realised", "vrp": "Gap"})
                    .round(1), hide_index=True, height=400)
+
+    # ---------------- index comparison ----------------
+with tabs[7]:
+    st.subheader("S&P 500 vs Nasdaq-100 vs Russell 2000")
+    st.plotly_chart(load_fig("index_compare.json", height=550), width="stretch")
+    m = pd.read_csv(RESULTS / "index_metrics.csv")
+    st.dataframe(m.rename(columns={"index": "Index", "tenor": "Target", "expiry": "Expiry used",
+                                   "days": "Days", "atm_vol": "ATM vol", "vol_90": "Vol at ~90% strike",
+                                   "skew": "Skew", "skew_ratio": "Skew ratio"}).round(3),
+                 hide_index=True)
+    st.markdown(
+        "The S&P 500 has the lowest at-the-money volatility of the three but the steepest skew "
+        "relative to its level. Deep downside S&P 500 options can be priced at higher volatility "
+        "than Russell 2000 options, despite the Russell being the more volatile index. This is "
+        "consistent with concentrated hedging demand for S&P 500 puts."
+    )
+    st.markdown(
+        "**Method:** the same pipeline as the SPX surface, run on each index. All three use one "
+        "discount rate implied from SPX put-call parity, because the less liquid indices give "
+        "unstable rates; each index's forward is the median across strikes of K + (C − P)/DF. "
+        "Expiries with implausible forwards or too few quotes on either side of the forward are "
+        "dropped. Skew is measured on the expiry nearest each target that is quoted down to a "
+        "~90% strike, so the expiry used can differ from the target (see the Days column). "
+        "Single-day snapshot."
+    )
     
 # ---------------- 6. method ----------------
-with tabs[7]:
+with tabs[8]:
     st.subheader("Method")
     st.markdown("""
 1. **Data:** SPX option chain from Yahoo Finance (end-of-day snapshot).
